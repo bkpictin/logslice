@@ -11,6 +11,8 @@ import (
 
 // RunTail follows a file for new log lines and processes them through the
 // filter, formatter, and stats pipeline until the context is cancelled.
+// It returns ctx.Err() if the context is cancelled, or nil if the tail
+// source is closed. Any write or formatting errors are returned immediately.
 func RunTail(ctx context.Context, cfg Config) error {
 	f, err := filter.New(cfg.StartTime, cfg.EndTime, cfg.Level, cfg.Pattern)
 	if err != nil {
@@ -35,18 +37,12 @@ func RunTail(ctx context.Context, cfg Config) error {
 	for {
 		select {
 		case <-ctx.Done():
-			st.Finish()
-			if cfg.ShowStats {
-				st.Report(cfg.Writer)
-			}
+			finishStats(st, cfg)
 			return ctx.Err()
 
 		case line, ok := <-lines:
 			if !ok {
-				st.Finish()
-				if cfg.ShowStats {
-					st.Report(cfg.Writer)
-				}
+				finishStats(st, cfg)
 				return nil
 			}
 
@@ -63,5 +59,14 @@ func RunTail(ctx context.Context, cfg Config) error {
 				return err
 			}
 		}
+	}
+}
+
+// finishStats finalises the stats collection and optionally prints a report
+// to the configured writer.
+func finishStats(st *stats.Stats, cfg Config) {
+	st.Finish()
+	if cfg.ShowStats {
+		st.Report(cfg.Writer)
 	}
 }

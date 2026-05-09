@@ -78,3 +78,23 @@ func TestNew_InvalidWindowDefaultsToOne(t *testing.T) {
 		t.Fatal("window=0 should default to 1; repeat should be duplicate")
 	}
 }
+
+func TestNew_WindowExactBoundary(t *testing.T) {
+	// Verify that an entry is still present at exactly the window boundary
+	// and evicted only after one more insertion.
+	d := dedupe.New(3)
+	d.IsDuplicate("a")
+	d.IsDuplicate("b")
+	d.IsDuplicate("c")
+	// Window is full: [a, b, c]. "a" should still be present.
+	if d.IsDuplicate("a") {
+		t.Fatal("'a' should still be in the window before eviction")
+	}
+	// After inserting "a" again the window is [b, c, a].
+	// Now insert one more entry to evict "b".
+	d.IsDuplicate("d")
+	// "b" should now be evicted.
+	if d.IsDuplicate("b") {
+		t.Fatal("'b' should have been evicted from the window")
+	}
+}

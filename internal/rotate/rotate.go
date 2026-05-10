@@ -58,6 +58,11 @@ func (d *Detector) Interval() time.Duration {
 	return d.interval
 }
 
+// Path returns the file path this detector is watching.
+func (d *Detector) Path() string {
+	return d.path
+}
+
 func (d *Detector) snapshot() error {
 	fi, err := os.Stat(d.path)
 	if err != nil {

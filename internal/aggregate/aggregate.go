@@ -69,3 +69,22 @@ func (a *Aggregator) Len() int {
 	defer a.mu.Unlock()
 	return len(a.counts)
 }
+
+// TopN returns up to n entries sorted by count descending. Entries with equal
+// counts retain their original insertion order. If n is zero or negative, all
+// entries are returned.
+func (a *Aggregator) TopN(n int) []Entry {
+	entries := a.Results()
+
+	// Stable sort by count descending, preserving insertion order for ties.
+	for i := 1; i < len(entries); i++ {
+		for j := i; j > 0 && entries[j].Count > entries[j-1].Count; j-- {
+			entries[j], entries[j-1] = entries[j-1], entries[j]
+		}
+	}
+
+	if n > 0 && n < len(entries) {
+		return entries[:n]
+	}
+	return entries
+}
